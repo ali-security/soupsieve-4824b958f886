@@ -590,6 +590,71 @@ class TestInvalid(util.TestCase):
         with self.assertRaises(TypeError):
             sv.filter('div', "not a tag", flags=flags)
 
+    def test_excessive_selectors(self):
+        """Test excessive selectors."""
+
+        # Build a 500 KB selector string: "a,a,a,...,a" (250,000 items)
+        count = 10000
+        selector = ",".join("a" for _ in range(count))
+
+        # Compile the selector
+        with self.assertRaises(ValueError):
+            sv.compile(selector)
+
+    def test_excessive_custom_selectors(self):
+        """Test excessive custom selectors."""
+
+        # Build a 500 KB selector string: "a,a,a,...,a" (250,000 items)
+        count = 10000
+        selector = ",".join("a" for _ in range(count))
+
+        # Compile the selector
+        with self.assertRaises(ValueError):
+            sv.compile('div:--custom', custom={':--custom': selector})
+
+    def test_excessive_custom_and_normal_selectors(self):
+        """Test excessive custom and normal selectors."""
+
+        count = 5000
+        selector = ",".join("a" for _ in range(count))
+
+        # Compile the selector
+        with self.assertRaises(ValueError):
+            sv.compile(':is({}):--custom'.format(selector), custom={':--custom': selector})
+
+    def test_excessive_builtin_pseudo_class_expansion(self):
+        """Test that built-in pseudo-classes which expand to selector lists count against the limit."""
+
+        # `:read-only` expands to a large internal selector list, so a short
+        # pattern repeating it can expand to a massive number of selectors.
+        selector = 'div' + ':read-only' * 1000
+
+        with self.assertRaises(ValueError):
+            sv.compile(selector)
+
+    def test_excessive_nested_custom_selectors(self):
+        """Test that reusing nested custom selectors counts against the limit."""
+
+        # Each level references the previous level 10 times, growing exponentially.
+        custom = {':--l0': 'a'}
+        for level in range(1, 5):
+            custom[':--l{}'.format(level)] = ':--l{}'.format(level - 1) * 10
+
+        with self.assertRaises(ValueError):
+            sv.compile('div:--l4', custom=custom)
+
+    def test_selectors_under_limit(self):
+        """Test that large selectors under the limit still compile."""
+
+        count = 4000
+        selector = ",".join("a" for _ in range(count))
+
+        pattern = sv.compile(selector)
+        self.assertEqual(len(pattern.selectors), count)
+
+        pattern = sv.compile('div:--custom', custom={':--custom': selector})
+        self.assertEqual(len(pattern.selectors), 1)
+
 
 class TestSyntaxErrorReporting(util.TestCase):
     """Test reporting of syntax errors."""
