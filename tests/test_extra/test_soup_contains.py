@@ -127,6 +127,13 @@ class TestSoupContains(util.TestCase):
             flags=util.HTML
         )
 
+    def test_contains_unclosed_quote(self):
+        """Test contains with an unclosed quoted value fails for syntax error, not timeout error."""
+
+        self.assert_raises_no_timeout(':-soup-contains("' + ('x' * 300), sv.SelectorSyntaxError)
+        self.assert_raises_no_timeout(":-soup-contains('" + ('x' * 300), sv.SelectorSyntaxError)
+        self.assert_raises_no_timeout(':-soup-contains("' + ('\\\r' * 300), sv.SelectorSyntaxError)
+
     def test_contains_escapes(self):
         """Test contains with escape characters."""
 

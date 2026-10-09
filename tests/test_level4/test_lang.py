@@ -1,4 +1,5 @@
 """Test language selectors."""
+import soupsieve as sv
 from .. import util
 
 
@@ -55,6 +56,12 @@ class TestLang(util.TestCase):
             [],
             flags=util.HTML
         )
+
+    def test_lang_unclosed_quote(self):
+        """Test language with an unclosed quoted value fails for syntax error, not timeout error."""
+
+        self.assert_raises_no_timeout('p:lang("' + ('x' * 300), sv.SelectorSyntaxError)
+        self.assert_raises_no_timeout("p:lang('" + ('x' * 300), sv.SelectorSyntaxError)
 
     def test_explicit_wildcard(self):
         """Test language with explicit wildcard (same as implicit)."""
